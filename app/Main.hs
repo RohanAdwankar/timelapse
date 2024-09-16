@@ -31,19 +31,18 @@ getCommits dir = do
     return $ lines output
 
 selectCommits :: Int -> [String] -> [String]
-selectCommits n commits 
+selectCommits n commits
     | n <= 0 = []
     | n == 1 = [head commits]
-    | n == 2 = [head commits, last commits]
     | otherwise = 
-        let middleCommits = selectMiddleCommits (n - 2) (tail $ init commits)
-        in head commits : middleCommits ++ [last commits]
+        let indices = evenlySpacedIndices (length commits) n
+        in map (commits !!) indices
 
-selectMiddleCommits :: Int -> [String] -> [String]
-selectMiddleCommits n commits
-    | n <= 0 = []
-    | null commits = []
+evenlySpacedIndices :: Int -> Int -> [Int]
+evenlySpacedIndices total n
+    | n <= 1 = [0]
+    | n >= total = [0..total-1]
     | otherwise = 
-        let mid = length commits `div` 2
-            (left, m:right) = splitAt mid commits
-        in m : selectMiddleCommits (n - 1) (left ++ right)
+        let step = (total - 1) `div` (n - 1)
+            baseIndices = take (n-1) [0, step..]
+        in baseIndices ++ [total - 1]
