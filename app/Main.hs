@@ -27,16 +27,23 @@ cloneRepo dir url = do
 
 getCommits :: FilePath -> IO [String]
 getCommits dir = do
-    output <- readCreateProcess (shell $ "cd " ++ dir ++ " && git log --format=%H") ""
+    output <- readCreateProcess (shell $ "cd " ++ dir ++ " && git log --format=%H --reverse") ""
     return $ lines output
 
 selectCommits :: Int -> [String] -> [String]
-selectCommits n commits = take n $ binaryTreeTraversal commits
+selectCommits n commits 
+    | n <= 0 = []
+    | n == 1 = [head commits]
+    | n == 2 = [head commits, last commits]
+    | otherwise = 
+        let middleCommits = selectMiddleCommits (n - 2) (tail $ init commits)
+        in head commits : middleCommits ++ [last commits]
 
-binaryTreeTraversal :: [a] -> [a]
-binaryTreeTraversal [] = []
-binaryTreeTraversal [x] = [x]
-binaryTreeTraversal xs = 
-    let mid = length xs `div` 2
-        (left, m:right) = splitAt mid xs
-    in m : binaryTreeTraversal left ++ binaryTreeTraversal right
+selectMiddleCommits :: Int -> [String] -> [String]
+selectMiddleCommits n commits
+    | n <= 0 = []
+    | null commits = []
+    | otherwise = 
+        let mid = length commits `div` 2
+            (left, m:right) = splitAt mid commits
+        in m : selectMiddleCommits (n - 1) (left ++ right)
