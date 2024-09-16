@@ -25,6 +25,9 @@ dependencies:
 - directory
 - filepath
 - temporary
+- bytestring
+- aeson
+- unordered-containers
 
 ghc-options:
 - -Wall
