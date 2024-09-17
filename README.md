@@ -7,6 +7,7 @@ In Progress:
 - Ensure succesful installs/builds of all commits possible
 - Take screenshots of builds
 - Combine screenshots into timelapse video
+  
 Completed:
 - CLI to input Github URL and amount of commit to process
 - Binary search of commit given Github URL
