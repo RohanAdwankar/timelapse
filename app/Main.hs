@@ -2,12 +2,13 @@
 
 module Main (main) where
 
-import System.Process
+import System.Process (readCreateProcess, readCreateProcessWithExitCode, shell, CreateProcess(cwd))
+import System.Exit (ExitCode(..))
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive, doesFileExist)
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
-import Control.Monad (forM_, unless)
-import Control.Exception (bracket)
+import Control.Monad (forM_, unless, when)
+import Control.Exception (bracket, catch, SomeException)
 import Control.Concurrent (threadDelay)
 import Data.List (sort)
 import qualified Data.ByteString.Lazy as B
@@ -92,24 +93,33 @@ formatScripts (Just scripts) = Just $ unlines $ map formatScript $ KM.toList scr
 
 runDevScript :: FilePath -> IO ()
 runDevScript dir = do
-    putStrLn "Running 'npm run dev'..."
-    (_, Just hout, Just herr, ph) <-
-        createProcess (shell "npm run dev") { cwd = Just dir
-                                            , std_out = CreatePipe
-                                            , std_err = CreatePipe
-                                            }
-    
-    bracket (return ph) terminateProcess $ \_ -> do
-        threadDelay 5000000  -- 5 seconds
-        
-        output <- TIO.hGetContents hout
-        error <- TIO.hGetContents herr
-        
-        putStrLn "Initial server output:"
-        TIO.putStrLn $ T.unlines $ take 10 $ T.lines output
-        
-        unless (T.null error) $ do
+    putStrLn "Running 'npm install'..."
+    installResult <- runCommandWithOutput dir "npm install" `catch` handleException
+    case installResult of
+        Just output -> do
+            putStrLn "npm install output:"
+            putStrLn output
+            putStrLn "Running 'npm run dev'..."
+            devResult <- runCommandWithOutput dir "npm run dev" `catch` handleException
+            case devResult of
+                Just devOutput -> do
+                    putStrLn "Initial server output:"
+                    putStrLn $ unlines $ take 10 $ lines devOutput
+                Nothing -> putStrLn "Failed to run 'npm run dev'"
+        Nothing -> putStrLn "Failed to run 'npm install'"
+
+runCommandWithOutput :: FilePath -> String -> IO (Maybe String)
+runCommandWithOutput dir cmd = do
+    (exitCode, stdout, stderr) <- readCreateProcessWithExitCode (shell cmd) { cwd = Just dir } ""
+    case exitCode of
+        ExitSuccess -> return $ Just stdout
+        ExitFailure _ -> do
+            putStrLn $ "Command failed: " ++ cmd
             putStrLn "Error output:"
-            TIO.putStrLn error
-        
-    putStrLn "Dev script execution completed."
+            putStrLn stderr
+            return Nothing
+
+handleException :: SomeException -> IO (Maybe a)
+handleException e = do
+    putStrLn $ "An exception occurred: " ++ show e
+    return Nothing
