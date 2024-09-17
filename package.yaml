@@ -28,6 +28,8 @@ dependencies:
 - bytestring
 - aeson
 - unordered-containers
+- text
+- time
 
 ghc-options:
 - -Wall
