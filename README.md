@@ -1,4 +1,7 @@
 # timelapse
+
+https://github.com/user-attachments/assets/781ea125-625b-4531-b5e0-a0cb59196118
+
 ## Features
 In Progress:
 - Ensure succesful installs/builds of all commits possible
